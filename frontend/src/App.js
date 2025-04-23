@@ -10,10 +10,10 @@ import MyLoans from './components/loans/MyLoans';
 import AdminDashboard from './components/pages/AdminDashboard';
 import AddBook from './components/admin/AddBook';
 import EditBook from './components/admin/EditBook';
+import DeleteBook from './components/admin/DeleteBook';
 import PrivateRoute from './components/routing/PrivateRoute';
 import AdminRoute from './components/routing/AdminRoute';
 
-// No need to import App.css since we're using Bootstrap
 
 function App() {
   const [user, setUser] = useState(null);
@@ -97,6 +97,14 @@ function App() {
               element={
                 <AdminRoute user={user} loading={loading}>
                   <EditBook />
+                </AdminRoute>
+              } 
+            />
+            <Route 
+              path="/admin/books/delete/:id" 
+              element={
+                <AdminRoute user={user} loading={loading}>
+                  <DeleteBook />
                 </AdminRoute>
               } 
             />

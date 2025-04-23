@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const [books, setBooks] = useState([]);
@@ -7,73 +7,112 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [deleting, setDeleting] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch books
-        const booksResponse = await fetch('/api/books', {
-          credentials: 'include'
-        });
-        
-        if (!booksResponse.ok) {
-          throw new Error('Failed to fetch books');
-        }
-        
-        const booksData = await booksResponse.json();
-        setBooks(booksData);
-        
-        // Fetch loans
-        const loansResponse = await fetch('/api/loans', {
-          credentials: 'include'
-        });
-        
-        if (!loansResponse.ok) {
-          throw new Error('Failed to fetch loans');
-        }
-        
-        const loansData = await loansResponse.json();
-        setLoans(loansData);
-        
-        // In a real application, you would also fetch users here
-        // But we're simplifying for this student project
-        setUsers([{ _id: '1', name: 'Test User', email: 'test@example.com' }]);
-      } catch (err) {
-        setError(err.message);
-        console.error('Error fetching admin data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const handleDeleteBook = async (bookId) => {
-    if (!window.confirm('Are you sure you want to delete this book?')) {
-      return;
-    }
-    
-    setDeleting(bookId);
+  const fetchData = async () => {
     try {
-      const response = await fetch(`/api/books/${bookId}`, {
-        method: 'DELETE',
+      // Fetch books
+      const booksResponse = await fetch('/api/books', {
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to delete book');
+      if (!booksResponse.ok) {
+        throw new Error('Failed to fetch books');
       }
       
-      // Remove book from state
-      setBooks(books.filter(book => book._id !== bookId));
-      alert('Book deleted successfully!');
+      const booksData = await booksResponse.json();
+      setBooks(booksData);
+      
+      // Fetch loans
+      const loansResponse = await fetch('/api/loans', {
+        credentials: 'include'
+      });
+      
+      if (!loansResponse.ok) {
+        throw new Error('Failed to fetch loans');
+      }
+      
+      const loansData = await loansResponse.json();
+      setLoans(loansData);
+      
+      // Try to fetch users
+      try {
+        const usersResponse = await fetch('/api/users/all', {
+          credentials: 'include'
+        });
+        
+        if (usersResponse.ok) {
+          const usersData = await usersResponse.json();
+          setUsers(usersData);
+        } else {
+          // Fallback to default users if API fails
+          console.warn('Using default users data as API call failed');
+          setUsers([
+            { 
+              _id: '1', 
+              name: 'Admin User', 
+              email: 'admin@library.com',
+              role: 'admin',
+              registeredOn: new Date()
+            },
+            { 
+              _id: '2', 
+              name: 'Regular User', 
+              email: 'user@library.com',
+              role: 'user',
+              registeredOn: new Date()
+            }
+          ]);
+        }
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        // Fallback to default users
+        setUsers([
+          { 
+            _id: '1', 
+            name: 'Admin User', 
+            email: 'admin@library.com',
+            role: 'admin',
+            registeredOn: new Date()
+          },
+          { 
+            _id: '2', 
+            name: 'Regular User', 
+            email: 'user@library.com',
+            role: 'user',
+            registeredOn: new Date()
+          }
+        ]);
+      }
     } catch (err) {
       setError(err.message);
+      console.error('Error fetching admin data:', err);
     } finally {
-      setDeleting(null);
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchData();
+    
+    // Display success message if redirected from delete page
+    if (location.state && location.state.message) {
+      alert(location.state.message);
+      // Clear the message from location state
+      navigate(location.pathname, { replace: true });
+    }
+    
+    // Set up automatic refresh every 5 minutes
+    const refreshInterval = setInterval(() => {
+      fetchData();
+    }, 5 * 60 * 1000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [location, navigate]);
+
+  const handleDeleteBookClick = (bookId) => {
+    navigate(`/admin/books/delete/${bookId}`);
   };
 
   if (loading) {
@@ -102,6 +141,13 @@ const AdminDashboard = () => {
   return (
     <div className="my-4">
       <h1 className="mb-4">Admin Dashboard</h1>
+      
+      {error && (
+        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+          {error}
+          <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close" onClick={() => setError(null)}></button>
+        </div>
+      )}
       
       <div className="row mb-4">
         <div className="col-md-3 col-sm-6 mb-3">
@@ -177,10 +223,9 @@ const AdminDashboard = () => {
                       </Link>
                       <button 
                         className="btn btn-outline-danger btn-sm"
-                        onClick={() => handleDeleteBook(book._id)}
-                        disabled={deleting === book._id}
+                        onClick={() => handleDeleteBookClick(book._id)}
                       >
-                        {deleting === book._id ? '...' : 'Delete'}
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -191,44 +236,84 @@ const AdminDashboard = () => {
         </div>
       </div>
       
-      <div className="card">
-        <div className="card-header">
-          <h2 className="mb-0">Recent Loans</h2>
+      <div className="row mt-4">
+        <div className="col-md-6">
+          <div className="card mb-4">
+            <div className="card-header">
+              <h2 className="mb-0">Recent Loans</h2>
+            </div>
+            <div className="card-body">
+              <div className="table-responsive">
+                <table className="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Book</th>
+                      <th>User</th>
+                      <th>Due Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loans.slice(0, 5).map(loan => (
+                      <tr key={loan._id}>
+                        <td>{loan.book.title}</td>
+                        <td>{loan.user.name}</td>
+                        <td>{new Date(loan.dueDate).toLocaleDateString()}</td>
+                        <td>
+                          {loan.status === 'active' ? (
+                            new Date(loan.dueDate) < new Date() ? (
+                              <span className="badge bg-danger">Overdue</span>
+                            ) : (
+                              <span className="badge bg-success">Active</span>
+                            )
+                          ) : (
+                            <span className="badge bg-secondary">Returned</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="card-body">
-          <div className="table-responsive">
-            <table className="table table-hover">
-              <thead>
-                <tr>
-                  <th>Book</th>
-                  <th>User</th>
-                  <th>Issue Date</th>
-                  <th>Due Date</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loans.slice(0, 5).map(loan => (
-                  <tr key={loan._id}>
-                    <td>{loan.book.title}</td>
-                    <td>{loan.user.name}</td>
-                    <td>{new Date(loan.issueDate).toLocaleDateString()}</td>
-                    <td>{new Date(loan.dueDate).toLocaleDateString()}</td>
-                    <td>
-                      {loan.status === 'active' ? (
-                        new Date(loan.dueDate) < new Date() ? (
-                          <span className="badge bg-danger">Overdue</span>
-                        ) : (
-                          <span className="badge bg-success">Active</span>
-                        )
-                      ) : (
-                        <span className="badge bg-secondary">Returned</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        
+        <div className="col-md-6">
+          <div className="card">
+            <div className="card-header">
+              <h2 className="mb-0">Registered Users</h2>
+            </div>
+            <div className="card-body">
+              <div className="table-responsive">
+                <table className="table table-hover">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Registered On</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map(user => (
+                      <tr key={user._id}>
+                        <td>{user.name}</td>
+                        <td>{user.email}</td>
+                        <td>
+                          {user.role === 'admin' ? (
+                            <span className="badge bg-primary">Admin</span>
+                          ) : (
+                            <span className="badge bg-secondary">User</span>
+                          )}
+                        </td>
+                        <td>{new Date(user.registeredOn).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>

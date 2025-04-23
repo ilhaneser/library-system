@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const cors = require('cors');
 const path = require('path');
+require('dotenv').config();
 
 // Import routes
 const bookRoutes = require('./routes/bookRoutes');
@@ -13,7 +14,7 @@ const loanRoutes = require('./routes/loanRoutes');
 const app = express();
 
 // Connect to MongoDB
-mongoose.connect('mongodb+srv://ieser:ieser@418y.t2yd3.mongodb.net/library', {
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
   })
@@ -30,7 +31,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Session middleware
 app.use(session({
-  secret: 'library_session_secret',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 60 * 60 * 1000 } // 1 hour

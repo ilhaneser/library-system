@@ -12,4 +12,7 @@ router.post('/logout', userController.logoutUser);
 router.get('/profile', auth.isLoggedIn, userController.getUserProfile);
 router.get('/wishlist', auth.isLoggedIn, userController.getWishlist);
 
+// Admin routes
+router.get('/all', auth.isAdmin, userController.getAllUsers);
+
 module.exports = router;
