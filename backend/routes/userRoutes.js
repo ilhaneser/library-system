@@ -19,5 +19,6 @@ router.delete('/wishlist/:bookId', auth.isLoggedIn, userController.removeFromWis
 
 // Admin routes
 router.get('/all', auth.isAdmin, userController.getAllUsers);
+router.get('/wishlist/all', auth.isAdmin, userController.getAllWishlistedBooks);
 
 module.exports = router;

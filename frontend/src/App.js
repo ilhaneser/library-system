@@ -9,6 +9,7 @@ import Register from './components/auth/Register';
 import MyLoans from './components/loans/MyLoans';
 import Wishlist from './components/wishlist/Wishlist';
 import AdminDashboard from './components/pages/AdminDashboard';
+import AdminWishlistView from './components/admin/AdminWishlistView';
 import AddBook from './components/admin/AddBook';
 import EditBook from './components/admin/EditBook';
 import DeleteBook from './components/admin/DeleteBook';
@@ -113,6 +114,14 @@ function App() {
               element={
                 <AdminRoute user={user} loading={loading}>
                   <DeleteBook />
+                </AdminRoute>
+              } 
+            />
+            <Route 
+              path="/admin/wishlists" 
+              element={
+                <AdminRoute user={user} loading={loading}>
+                  <AdminWishlistView />
                 </AdminRoute>
               } 
             />

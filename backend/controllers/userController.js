@@ -200,6 +200,48 @@ exports.removeFromWishlist = async (req, res) => {
   }
 };
 
+// Get all wishlisted books (admin only)
+exports.getAllWishlistedBooks = async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    // Find all users and populate their wishlists
+    const users = await User.find()
+      .select('name email wishlist')
+      .populate('wishlist');
+    
+    // Create a map of books and the users who wishlisted them
+    const wishlistedBooks = new Map();
+    
+    users.forEach(user => {
+      user.wishlist.forEach(book => {
+        if (!wishlistedBooks.has(book._id.toString())) {
+          wishlistedBooks.set(book._id.toString(), {
+            book,
+            users: []
+          });
+        }
+        
+        wishlistedBooks.get(book._id.toString()).users.push({
+          id: user._id,
+          name: user.name,
+          email: user.email
+        });
+      });
+    });
+    
+    // Convert map to array for response
+    const result = Array.from(wishlistedBooks.values());
+    
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 // Check if a book is in user's wishlist
 exports.checkWishlist = async (req, res) => {
   try {
