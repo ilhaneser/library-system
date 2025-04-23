@@ -19,10 +19,13 @@ const BookList = ({ user }) => {
         }
         
         const data = await response.json();
-        setBooks(data);
+        // Ensure books is always an array, even if the API returns null
+        setBooks(data || []);
       } catch (err) {
         setError(err.message);
         console.error('Error fetching books:', err);
+        // Initialize empty array even on error to prevent crashes
+        setBooks([]);
       } finally {
         setLoading(false);
       }
@@ -41,13 +44,20 @@ const BookList = ({ user }) => {
           if (response.ok) {
             const data = await response.json();
             const wishlistMap = {};
-            data.forEach(book => {
-              wishlistMap[book._id] = true;
-            });
+            // Ensure data is an array before iterating
+            if (Array.isArray(data)) {
+              data.forEach(book => {
+                if (book && book._id) {
+                  wishlistMap[book._id] = true;
+                }
+              });
+            }
             setWishlist(wishlistMap);
           }
         } catch (err) {
           console.error('Error fetching wishlist:', err);
+          // Initialize empty object on error
+          setWishlist({});
         }
       };
       
@@ -108,7 +118,9 @@ const BookList = ({ user }) => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredBooks = books.filter(book => 
+  // Make sure books is always an array before filtering
+  const booksArray = Array.isArray(books) ? books : [];
+  const filteredBooks = booksArray.filter(book => 
     book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
     book.genre.toLowerCase().includes(searchTerm.toLowerCase())
@@ -152,7 +164,9 @@ const BookList = ({ user }) => {
       </div>
       
       {filteredBooks.length === 0 ? (
-        <p>No books available matching your search.</p>
+        <div className="alert alert-info">
+          <p>No books available matching your search. {books.length === 0 && 'The library catalog is currently empty.'}</p>
+        </div>
       ) : (
         <div className="row">
           {filteredBooks.map(book => (
