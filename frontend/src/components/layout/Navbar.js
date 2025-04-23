@@ -20,9 +20,17 @@ const Navbar = ({ user, logout }) => {
               <Link to="/books" className="nav-link">Books</Link>
             </li>
             {user && (
-              <li className="nav-item">
-                <Link to="/myloans" className="nav-link">My Loans</Link>
-              </li>
+              <>
+                <li className="nav-item">
+                  <Link to="/myloans" className="nav-link">My Loans</Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/wishlist" className="nav-link">
+                    <i className="bi bi-heart-fill me-1"></i>
+                    Wishlist
+                  </Link>
+                </li>
+              </>
             )}
             {user && user.role === 'admin' && (
               <li className="nav-item">

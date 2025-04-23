@@ -103,6 +103,21 @@ exports.logoutUser = (req, res) => {
   res.json({ message: 'User logged out' });
 };
 
+// Get all users (admin only)
+exports.getAllUsers = async (req, res) => {
+  try {
+    if (!req.session.user || req.session.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Not authorized' });
+    }
+    
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
 // Get wishlist
 exports.getWishlist = async (req, res) => {
   try {
@@ -123,15 +138,86 @@ exports.getWishlist = async (req, res) => {
   }
 };
 
-// Get all users (admin only)
-exports.getAllUsers = async (req, res) => {
+// Add book to wishlist
+exports.addToWishlist = async (req, res) => {
   try {
-    if (!req.session.user || req.session.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized' });
+    if (!req.session.user) {
+      return res.status(401).json({ message: 'Not authorized' });
     }
     
-    const users = await User.find().select('-password');
-    res.json(users);
+    const { bookId } = req.body;
+    
+    const user = await User.findById(req.session.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if book is already in wishlist
+    if (user.wishlist.includes(bookId)) {
+      return res.status(400).json({ message: 'Book already in wishlist' });
+    }
+    
+    // Add to wishlist
+    user.wishlist.push(bookId);
+    await user.save();
+    
+    res.json({ message: 'Book added to wishlist' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Remove book from wishlist
+exports.removeFromWishlist = async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+    
+    const bookId = req.params.bookId;
+    
+    const user = await User.findById(req.session.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if book is in wishlist
+    if (!user.wishlist.includes(bookId)) {
+      return res.status(400).json({ message: 'Book not in wishlist' });
+    }
+    
+    // Remove from wishlist
+    user.wishlist = user.wishlist.filter(id => id.toString() !== bookId);
+    await user.save();
+    
+    res.json({ message: 'Book removed from wishlist' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+};
+
+// Check if a book is in user's wishlist
+exports.checkWishlist = async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.status(401).json({ message: 'Not authorized' });
+    }
+    
+    const bookId = req.params.bookId;
+    
+    const user = await User.findById(req.session.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const isInWishlist = user.wishlist.includes(bookId);
+    
+    res.json({ isInWishlist });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Server Error' });

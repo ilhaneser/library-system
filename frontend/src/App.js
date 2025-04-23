@@ -7,13 +7,13 @@ import BookDetails from './components/books/BookDetails';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import MyLoans from './components/loans/MyLoans';
+import Wishlist from './components/wishlist/Wishlist';
 import AdminDashboard from './components/pages/AdminDashboard';
 import AddBook from './components/admin/AddBook';
 import EditBook from './components/admin/EditBook';
 import DeleteBook from './components/admin/DeleteBook';
 import PrivateRoute from './components/routing/PrivateRoute';
 import AdminRoute from './components/routing/AdminRoute';
-
 
 function App() {
   const [user, setUser] = useState(null);
@@ -64,7 +64,7 @@ function App() {
         <main className="container py-4 flex-grow-1">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/books" element={<BookList />} />
+            <Route path="/books" element={<BookList user={user} />} />
             <Route path="/books/:id" element={<BookDetails user={user} />} />
             <Route path="/login" element={<Login login={login} />} />
             <Route path="/register" element={<Register login={login} />} />
@@ -73,6 +73,14 @@ function App() {
               element={
                 <PrivateRoute user={user} loading={loading}>
                   <MyLoans />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/wishlist" 
+              element={
+                <PrivateRoute user={user} loading={loading}>
+                  <Wishlist />
                 </PrivateRoute>
               } 
             />

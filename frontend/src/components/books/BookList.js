@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
-const BookList = () => {
+const BookList = ({ user }) => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [wishlist, setWishlist] = useState({});
+  const [wishlistLoading, setWishlistLoading] = useState({});
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -26,7 +29,90 @@ const BookList = () => {
     };
 
     fetchBooks();
-  }, []);
+    
+    // Fetch wishlist status for each book if user is logged in
+    if (user) {
+      const fetchWishlist = async () => {
+        try {
+          const response = await fetch('/api/users/wishlist', {
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const wishlistMap = {};
+            data.forEach(book => {
+              wishlistMap[book._id] = true;
+            });
+            setWishlist(wishlistMap);
+          }
+        } catch (err) {
+          console.error('Error fetching wishlist:', err);
+        }
+      };
+      
+      fetchWishlist();
+    }
+  }, [user]);
+
+  const handleWishlistToggle = async (bookId, e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      // Redirect to login if not logged in
+      window.location.href = '/login';
+      return;
+    }
+    
+    setWishlistLoading(prev => ({ ...prev, [bookId]: true }));
+    
+    try {
+      let response;
+      
+      if (wishlist[bookId]) {
+        // Remove from wishlist
+        response = await fetch(`/api/users/wishlist/${bookId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+      } else {
+        // Add to wishlist
+        response = await fetch('/api/users/wishlist', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ bookId }),
+          credentials: 'include'
+        });
+      }
+      
+      if (!response.ok) {
+        throw new Error('Failed to update wishlist');
+      }
+      
+      // Toggle wishlist status
+      setWishlist(prev => ({
+        ...prev,
+        [bookId]: !prev[bookId]
+      }));
+    } catch (err) {
+      console.error('Error updating wishlist:', err);
+    } finally {
+      setWishlistLoading(prev => ({ ...prev, [bookId]: false }));
+    }
+  };
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const filteredBooks = books.filter(book => 
+    book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    book.genre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
     return (
@@ -48,22 +134,51 @@ const BookList = () => {
     <div>
       <h1 className="mb-4">Our Books</h1>
       
-      {books.length === 0 ? (
-        <p>No books available.</p>
+      <div className="row mb-4">
+        <div className="col-md-6 mx-auto">
+          <div className="input-group">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search books by title, author, or genre..."
+              value={searchTerm}
+              onChange={handleSearch}
+            />
+            <button className="btn btn-outline-secondary" type="button">
+              <i className="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {filteredBooks.length === 0 ? (
+        <p>No books available matching your search.</p>
       ) : (
         <div className="row">
-          {books.map(book => (
+          {filteredBooks.map(book => (
             <div key={book._id} className="col-lg-4 col-md-6 mb-4">
               <div className="card h-100">
-                <img 
-                  src={book.coverImage ? `/uploads/${book.coverImage}` : '/img/default-book-cover.jpg'}
-                  alt={book.title}
-                  className="card-img-top"
-                  style={{ height: '250px', objectFit: 'cover' }}
-                  onError={(e) => {
-                    e.target.src = '/img/default-book-cover.jpg';
-                  }}
-                />
+                <div className="position-relative">
+                  <img 
+                    src={book.coverImage ? `/uploads/${book.coverImage}` : '/img/default-book-cover.jpg'}
+                    alt={book.title}
+                    className="card-img-top"
+                    style={{ height: '250px', objectFit: 'cover' }}
+                    onError={(e) => {
+                      e.target.src = '/img/default-book-cover.jpg';
+                    }}
+                  />
+                  {user && (
+                    <button 
+                      className={`btn ${wishlist[book._id] ? 'btn-danger' : 'btn-outline-danger'} position-absolute`}
+                      style={{ top: '10px', right: '10px' }}
+                      onClick={(e) => handleWishlistToggle(book._id, e)}
+                      disabled={wishlistLoading[book._id]}
+                    >
+                      <i className={`bi ${wishlist[book._id] ? 'bi-heart-fill' : 'bi-heart'}`}></i>
+                    </button>
+                  )}
+                </div>
                 <div className="card-body">
                   <h5 className="card-title">{book.title}</h5>
                   <p className="card-text">
