@@ -8,6 +8,8 @@ const BookDetails = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [borrowing, setBorrowing] = useState(false);
+  const [inWishlist, setInWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   useEffect(() => {
     const fetchBook = async () => {
@@ -29,7 +31,27 @@ const BookDetails = ({ user }) => {
     };
 
     fetchBook();
-  }, [id]);
+    
+    // Check if book is in wishlist
+    if (user) {
+      const checkWishlist = async () => {
+        try {
+          const response = await fetch(`/api/users/wishlist/check/${id}`, {
+            credentials: 'include'
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setInWishlist(data.isInWishlist);
+          }
+        } catch (err) {
+          console.error('Error checking wishlist status:', err);
+        }
+      };
+      
+      checkWishlist();
+    }
+  }, [id, user]);
 
   const handleBorrow = async () => {
     if (!user) {
@@ -64,6 +86,48 @@ const BookDetails = ({ user }) => {
       setError(err.message);
     } finally {
       setBorrowing(false);
+    }
+  };
+  
+  const handleWishlistToggle = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    
+    setWishlistLoading(true);
+    try {
+      let response;
+      
+      if (inWishlist) {
+        // Remove from wishlist
+        response = await fetch(`/api/users/wishlist/${id}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        });
+      } else {
+        // Add to wishlist
+        response = await fetch('/api/users/wishlist', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ bookId: id }),
+          credentials: 'include'
+        });
+      }
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to update wishlist');
+      }
+      
+      // Toggle wishlist status
+      setInWishlist(!inWishlist);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setWishlistLoading(false);
     }
   };
 
@@ -114,7 +178,19 @@ const BookDetails = ({ user }) => {
         </div>
         
         <div className="col-md-8">
-          <h1>{book.title}</h1>
+          <div className="d-flex justify-content-between align-items-start mb-2">
+            <h1>{book.title}</h1>
+            {user && (
+              <button 
+                className={`btn ${inWishlist ? 'btn-danger' : 'btn-outline-danger'}`}
+                onClick={handleWishlistToggle}
+                disabled={wishlistLoading}
+              >
+                <i className={`bi ${inWishlist ? 'bi-heart-fill' : 'bi-heart'}`}></i>
+                {wishlistLoading ? ' ...' : inWishlist ? ' Remove from Wishlist' : ' Add to Wishlist'}
+              </button>
+            )}
+          </div>
           <hr />
           
           <div className="row mb-4">

@@ -36,7 +36,7 @@ const AdminDashboard = () => {
       const loansData = await loansResponse.json();
       setLoans(loansData);
       
-      // Try to fetch users
+      // Fetch users
       try {
         const usersResponse = await fetch('/api/users/all', {
           credentials: 'include'
@@ -184,10 +184,18 @@ const AdminDashboard = () => {
         </div>
       </div>
       
+      <div className="d-flex mb-4">
+        <Link to="/admin/books/add" className="btn btn-primary me-2">
+          Add New Book
+        </Link>
+        <Link to="/admin/wishlists" className="btn btn-outline-primary">
+          <i className="bi bi-heart-fill me-1"></i> View Wishlisted Books
+        </Link>
+      </div>
+      
       <div className="card mb-4">
-        <div className="card-header d-flex justify-content-between align-items-center">
+        <div className="card-header">
           <h2 className="mb-0">Manage Books</h2>
-          <Link to="/admin/books/add" className="btn btn-primary">Add New Book</Link>
         </div>
         <div className="card-body">
           <div className="table-responsive">

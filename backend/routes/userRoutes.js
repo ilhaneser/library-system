@@ -10,9 +10,15 @@ router.post('/logout', userController.logoutUser);
 
 // Protected routes
 router.get('/profile', auth.isLoggedIn, userController.getUserProfile);
+
+// Wishlist routes - order matters for route matching!
+router.get('/wishlist/check/:bookId', auth.isLoggedIn, userController.checkWishlist);
 router.get('/wishlist', auth.isLoggedIn, userController.getWishlist);
+router.post('/wishlist', auth.isLoggedIn, userController.addToWishlist);
+router.delete('/wishlist/:bookId', auth.isLoggedIn, userController.removeFromWishlist);
 
 // Admin routes
 router.get('/all', auth.isAdmin, userController.getAllUsers);
+router.get('/wishlist/all', auth.isAdmin, userController.getAllWishlistedBooks);
 
 module.exports = router;
