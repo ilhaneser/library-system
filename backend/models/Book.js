@@ -1,5 +1,15 @@
 const mongoose = require('mongoose');
 
+// Predefined list of genres
+const genres = [
+  'Fiction',
+  'Non-Fiction',
+  'Science Fiction',
+  'Fantasy',
+  'Mystery',
+  'Biography'
+];
+
 const BookSchema = new mongoose.Schema({
   title: {
     type: String,
@@ -29,7 +39,7 @@ const BookSchema = new mongoose.Schema({
   genre: {
     type: String,
     required: true,
-    trim: true
+    enum: genres
   },
   description: {
     type: String,
@@ -39,6 +49,10 @@ const BookSchema = new mongoose.Schema({
     type: String,
     default: 'default-book-cover.jpg'
   },
+  pdfFile: {
+    type: String,
+    default: null
+  },
   // Max copies that can be borrowed simultaneously
   copies: {
     type: Number,
@@ -47,6 +61,18 @@ const BookSchema = new mongoose.Schema({
   },
   // Current copies on loan
   copiesOnLoan: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  // Review statistics
+  averageRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  reviewCount: {
     type: Number,
     default: 0,
     min: 0
@@ -61,5 +87,8 @@ const BookSchema = new mongoose.Schema({
 BookSchema.virtual('available').get(function() {
   return this.copiesOnLoan < this.copies;
 });
+
+// Export the genres list to make it available throughout the application
+BookSchema.statics.genres = genres;
 
 module.exports = mongoose.model('Book', BookSchema);

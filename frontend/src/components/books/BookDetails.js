@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import BookReviews from '../reviews/BookReviews';
 
 const BookDetails = ({ user }) => {
   const { id } = useParams();
@@ -131,6 +132,28 @@ const BookDetails = ({ user }) => {
     }
   };
 
+  // Helper function to render stars
+  const renderStars = (rating) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<i key={i} className="bi bi-star-fill text-warning"></i>);
+    }
+    
+    if (hasHalfStar) {
+      stars.push(<i key="half" className="bi bi-star-half text-warning"></i>);
+    }
+    
+    const emptyStars = 5 - stars.length;
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(<i key={`empty-${i}`} className="bi bi-star text-warning"></i>);
+    }
+    
+    return stars;
+  };
+
   if (loading) {
     return (
       <div className="text-center mt-5">
@@ -167,7 +190,7 @@ const BookDetails = ({ user }) => {
       <div className="row">
         <div className="col-md-4 mb-4">
           <img
-            src={book.coverImage ? `/uploads/${book.coverImage}` : '/img/default-book-cover.jpg'}
+            src={book.coverImage ? `/uploads/covers/${book.coverImage}` : '/img/default-book-cover.jpg'}
             alt={book.title}
             className="img-fluid rounded shadow"
             style={{ maxHeight: '500px' }}
@@ -175,6 +198,17 @@ const BookDetails = ({ user }) => {
               e.target.src = '/img/default-book-cover.jpg';
             }}
           />
+          
+          {book.averageRating > 0 && (
+            <div className="mt-3 text-center">
+              <div className="d-flex justify-content-center">
+                {renderStars(book.averageRating)}
+              </div>
+              <p className="text-muted mt-1">
+                {book.averageRating.toFixed(1)} ({book.reviewCount} {book.reviewCount === 1 ? 'review' : 'reviews'})
+              </p>
+            </div>
+          )}
         </div>
         
         <div className="col-md-8">
@@ -219,19 +253,35 @@ const BookDetails = ({ user }) => {
             </div>
           </div>
           
-          {user ? (
-            <button
-              className="btn btn-primary"
-              onClick={handleBorrow}
-              disabled={!isAvailable || borrowing}
-            >
-              {borrowing ? 'Processing...' : 'Borrow Book'}
-            </button>
-          ) : (
-            <div className="alert alert-info">
-              Please <a href="/login">login</a> to borrow this book.
-            </div>
-          )}
+          <div className="d-flex flex-wrap gap-2 mb-4">
+            {user ? (
+              <button
+                className="btn btn-primary"
+                onClick={handleBorrow}
+                disabled={!isAvailable || borrowing}
+              >
+                {borrowing ? 'Processing...' : 'Borrow Book'}
+              </button>
+            ) : (
+              <div className="alert alert-info w-100">
+                Please <a href="/login">login</a> to borrow this book.
+              </div>
+            )}
+            
+            {book.pdfFile && user && (
+              <Link 
+                to={`/books/${id}/read`} 
+                className="btn btn-outline-primary"
+              >
+                <i className="bi bi-file-earmark-pdf"></i> Read PDF
+              </Link>
+            )}
+          </div>
+          
+          {/* Book Reviews Section */}
+          <div className="mt-5">
+            <BookReviews bookId={id} user={user} />
+          </div>
         </div>
       </div>
     </div>

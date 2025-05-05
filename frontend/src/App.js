@@ -4,6 +4,7 @@ import Navbar from './components/layout/Navbar';
 import Home from './components/pages/Home';
 import BookList from './components/books/BookList';
 import BookDetails from './components/books/BookDetails';
+import PDFViewerPage from './components/books/PDFViewerPage';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import MyLoans from './components/loans/MyLoans';
@@ -67,6 +68,14 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/books" element={<BookList user={user} />} />
             <Route path="/books/:id" element={<BookDetails user={user} />} />
+            <Route 
+              path="/books/:id/read" 
+              element={
+                <PrivateRoute user={user} loading={loading}>
+                  <PDFViewerPage />
+                </PrivateRoute>
+              } 
+            />
             <Route path="/login" element={<Login login={login} />} />
             <Route path="/register" element={<Register login={login} />} />
             <Route 
