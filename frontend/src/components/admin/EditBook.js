@@ -16,6 +16,11 @@ const EditBook = () => {
     copies: 1
   });
   
+  const [genres, setGenres] = useState([]);
+  const [coverImage, setCoverImage] = useState(null);
+  const [pdfFile, setPdfFile] = useState(null);
+  const [currentPdf, setCurrentPdf] = useState(null);
+  const [currentCover, setCurrentCover] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -23,27 +28,49 @@ const EditBook = () => {
   const { title, author, ISBN, publisher, publicationYear, genre, description, copies } = formData;
   
   useEffect(() => {
-    const fetchBook = async () => {
+    // Fetch available genres and book data
+    const fetchData = async () => {
       try {
-        const response = await fetch(`/api/books/${id}`, {
+        // Fetch genres
+        const genresResponse = await fetch('/api/books/genres', {
           credentials: 'include'
         });
         
-        if (!response.ok) {
+        if (!genresResponse.ok) {
+          throw new Error('Failed to fetch genres');
+        }
+        
+        const genresData = await genresResponse.json();
+        setGenres(genresData);
+        
+        // Fetch book details
+        const bookResponse = await fetch(`/api/books/${id}`, {
+          credentials: 'include'
+        });
+        
+        if (!bookResponse.ok) {
           throw new Error('Failed to fetch book details');
         }
         
-        const data = await response.json();
+        const bookData = await bookResponse.json();
         setFormData({
-          title: data.title,
-          author: data.author,
-          ISBN: data.ISBN,
-          publisher: data.publisher,
-          publicationYear: data.publicationYear,
-          genre: data.genre,
-          description: data.description,
-          copies: data.copies
+          title: bookData.title,
+          author: bookData.author,
+          ISBN: bookData.ISBN,
+          publisher: bookData.publisher,
+          publicationYear: bookData.publicationYear,
+          genre: bookData.genre,
+          description: bookData.description,
+          copies: bookData.copies
         });
+        
+        if (bookData.coverImage) {
+          setCurrentCover(bookData.coverImage);
+        }
+        
+        if (bookData.pdfFile) {
+          setCurrentPdf(bookData.pdfFile);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -51,7 +78,7 @@ const EditBook = () => {
       }
     };
     
-    fetchBook();
+    fetchData();
   }, [id]);
   
   const onChange = e => {
@@ -63,18 +90,38 @@ const EditBook = () => {
     });
   };
   
+  const handleFileChange = (e) => {
+    const { name, files } = e.target;
+    if (name === 'coverImage') {
+      setCoverImage(files[0]);
+    } else if (name === 'pdfFile') {
+      setPdfFile(files[0]);
+    }
+  };
+  
   const onSubmit = async e => {
     e.preventDefault();
     setSaving(true);
     setError('');
     
     try {
+      // Create FormData object for file uploads
+      const formDataWithFiles = new FormData();
+      
+      // Add book data to FormData
+      Object.keys(formData).forEach(key => {
+        formDataWithFiles.append(key, formData[key]);
+      });
+      
+      // Add cover image if selected
+      if (coverImage) {
+        formDataWithFiles.append('coverImage', coverImage);
+      }
+      
+      // Update the book
       const response = await fetch(`/api/books/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData),
+        body: formDataWithFiles,
         credentials: 'include'
       });
       
@@ -82,6 +129,22 @@ const EditBook = () => {
       
       if (!response.ok) {
         throw new Error(data.message || 'Failed to update book');
+      }
+      
+      // If a PDF file was selected, upload it separately
+      if (pdfFile) {
+        const pdfFormData = new FormData();
+        pdfFormData.append('pdfFile', pdfFile);
+        
+        const pdfResponse = await fetch(`/api/books/${id}/pdf`, {
+          method: 'POST',
+          body: pdfFormData,
+          credentials: 'include'
+        });
+        
+        if (!pdfResponse.ok) {
+          console.error('Failed to upload PDF, but book was updated');
+        }
       }
       
       navigate(`/books/${id}`);
@@ -109,7 +172,7 @@ const EditBook = () => {
       
       <div className="card">
         <div className="card-body">
-          <form onSubmit={onSubmit}>
+          <form onSubmit={onSubmit} encType="multipart/form-data">
             <div className="row mb-3">
               <div className="col-md-6">
                 <div className="mb-3">
@@ -192,15 +255,19 @@ const EditBook = () => {
               <div className="col-md-6">
                 <div className="mb-3">
                   <label htmlFor="genre" className="form-label">Genre</label>
-                  <input
-                    type="text"
-                    className="form-control"
+                  <select
+                    className="form-select"
                     id="genre"
                     name="genre"
                     value={genre}
                     onChange={onChange}
                     required
-                  />
+                  >
+                    <option value="" disabled>Select a genre</option>
+                    {genres.map(g => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="col-md-6">
@@ -231,6 +298,61 @@ const EditBook = () => {
                 rows="5"
                 required
               ></textarea>
+            </div>
+            
+            <div className="row mb-3">
+              <div className="col-md-6">
+                <div className="mb-3">
+                  <label htmlFor="coverImage" className="form-label">Cover Image</label>
+                  {currentCover && (
+                    <div className="mb-2">
+                      <img 
+                        src={`/uploads/covers/${currentCover}`} 
+                        alt="Current cover" 
+                        style={{ height: '100px' }} 
+                        className="d-block mb-2"
+                      />
+                      <small>Current cover</small>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    className="form-control"
+                    id="coverImage"
+                    name="coverImage"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                  <small className="text-muted">Optional. Max size: 5MB</small>
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="mb-3">
+                  <label htmlFor="pdfFile" className="form-label">PDF File</label>
+                  {currentPdf && (
+                    <div className="mb-2">
+                      <p className="mb-1">Current PDF: {currentPdf}</p>
+                      <a 
+                        href={`/api/books/${id}/pdf`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn btn-sm btn-outline-primary mb-2"
+                      >
+                        View current PDF
+                      </a>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    className="form-control"
+                    id="pdfFile"
+                    name="pdfFile"
+                    accept="application/pdf"
+                    onChange={handleFileChange}
+                  />
+                  <small className="text-muted">Optional. Max size: 20MB</small>
+                </div>
+              </div>
             </div>
             
             <div className="d-flex justify-content-between">
