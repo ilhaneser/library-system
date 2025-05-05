@@ -11,6 +11,7 @@ const bookRoutes = require('./routes/bookRoutes');
 const userRoutes = require('./routes/userRoutes');
 const loanRoutes = require('./routes/loanRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const recommendationRoutes = require('./routes/recommendationRoutes');
 
 // Initialize app
 const app = express();
@@ -62,6 +63,7 @@ app.use('/api/books', bookRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/loans', loanRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // Serve uploads directories
 app.use('/uploads/covers', express.static(path.join(__dirname, 'uploads/covers')));

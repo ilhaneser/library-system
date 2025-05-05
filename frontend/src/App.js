@@ -63,9 +63,9 @@ function App() {
     <Router>
       <div className="d-flex flex-column min-vh-100">
         <Navbar user={user} logout={logout} />
-        <main className="container py-4 flex-grow-1">
+        <main className="container-fluid py-4 flex-grow-1">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home user={user} />} />
             <Route path="/books" element={<BookList user={user} />} />
             <Route path="/books/:id" element={<BookDetails user={user} />} />
             <Route 
