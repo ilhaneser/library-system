@@ -129,15 +129,15 @@ const MyLoans = () => {
             <div key={loan._id} className="col-lg-6 mb-4">
               <div className="card bg-light">
                 <div className="card-body">
-                  <h5 className="card-title">{loan.book.title}</h5>
+                  {/* <h5 className="card-title">{loan.book.title}</h5> */}
                   <p className="card-text">
-                    <strong>Author:</strong> {loan.book.author}<br />
+                    {/* <strong>Author:</strong> {loan.book.author}<br /> */}
                     <strong>Borrowed:</strong> {new Date(loan.issueDate).toLocaleDateString()}<br />
                     <strong>Returned:</strong> {new Date(loan.returnDate).toLocaleDateString()}<br />
                     <span className="badge bg-success mt-2">Returned</span>
                   </p>
                   <Link 
-                    to={`/books/${loan.book._id}`} 
+                    // to={`/books/${loan.book._id}`} 
                     className="btn btn-outline-secondary"
                   >
                     View Book

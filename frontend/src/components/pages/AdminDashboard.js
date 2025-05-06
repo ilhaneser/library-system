@@ -264,7 +264,7 @@ const AdminDashboard = () => {
                   <tbody>
                     {loans.slice(0, 5).map(loan => (
                       <tr key={loan._id}>
-                        <td>{loan.book.title}</td>
+                        {/* <td>{loan.book.title}</td> */}
                         <td>{loan.user.name}</td>
                         <td>{new Date(loan.dueDate).toLocaleDateString()}</td>
                         <td>

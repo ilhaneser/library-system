@@ -8,6 +8,6 @@
 .env.test.local
 .env.production.local
 
-# Uploads folder content (but keep the folder)
-/uploads/*
-!/uploads/.gitkeep
+# # Uploads folder content (but keep the folder)
+# /uploads/*
+# !/uploads/.gitkeep
