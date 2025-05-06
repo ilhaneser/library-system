@@ -49,6 +49,35 @@ const Wishlist = () => {
     }
   };
 
+  // Helper function to render stars
+  const renderStars = (rating) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<i key={i} className="bi bi-star-fill text-warning"></i>);
+    }
+    
+    if (hasHalfStar) {
+      stars.push(<i key="half" className="bi bi-star-half text-warning"></i>);
+    }
+    
+    const emptyStars = 5 - stars.length;
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(<i key={`empty-${i}`} className="bi bi-star text-warning"></i>);
+    }
+    
+    return (
+      <div className="d-flex">
+        {stars}
+        {rating > 0 && (
+          <span className="ms-1 text-muted">({rating.toFixed(1)})</span>
+        )}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="text-center mt-5">
@@ -79,7 +108,7 @@ const Wishlist = () => {
             <div key={book._id} className="col-lg-4 col-md-6 mb-4">
               <div className="card h-100">
                 <img 
-                  src={book.coverImage ? `/uploads/${book.coverImage}` : '/img/default-book-cover.jpg'}
+                  src={book.coverImage ? `/uploads/covers/${book.coverImage}` : '/img/default-book-cover.jpg'}
                   alt={book.title}
                   className="card-img-top"
                   style={{ height: '250px', objectFit: 'cover' }}
@@ -96,6 +125,13 @@ const Wishlist = () => {
                       <span className="text-success">Available</span> : 
                       <span className="text-danger">Unavailable</span>}
                   </p>
+                  
+                  {book.averageRating > 0 && (
+                    <div className="mb-2">
+                      {renderStars(book.averageRating)}
+                    </div>
+                  )}
+                  
                   <div className="d-flex justify-content-between align-items-center">
                     <Link 
                       to={`/books/${book._id}`}
